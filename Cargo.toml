@@ -1,6 +1,6 @@
 [package]
 name = "web_hook"
-version = "0.9.1"
+version = "0.9.2"
 authors = ["andy@ycn.cc"]
 description = "Hook anything from web"
 edition = "2021"

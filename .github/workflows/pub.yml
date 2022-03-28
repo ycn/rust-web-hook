@@ -13,14 +13,14 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact_name: web-hook
-            asset_name: web-hook-linux-amd64
+            artifact_name: web_hook
+            asset_name: web_hook-linux-amd64
           - os: windows-latest
-            artifact_name: web-hook.exe
-            asset_name: web-hook-windows-amd64
+            artifact_name: web_hook.exe
+            asset_name: web_hook-windows-amd64
           - os: macos-latest
-            artifact_name: web-hook
-            asset_name: web-hook-macos-amd64
+            artifact_name: web_hook
+            asset_name: web_hook-macos-amd64
 
     steps:
     - uses: actions/checkout@v2
