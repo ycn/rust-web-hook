@@ -13,58 +13,58 @@ use sha2::{Digest, Sha256};
 // structs
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AppData {
-  pub dir: String,
-  pub ua: String,
-  pub secret: String,
+    pub dir: String,
+    pub ua: String,
+    pub secret: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TokenParams {
-  pub ts: Option<String>,
-  pub code: Option<String>,
+    pub ts: Option<String>,
+    pub code: Option<String>,
 }
 
 // utils
 pub fn get_user_agent<'a>(req: &'a HttpRequest) -> Option<&'a str> {
-  req.headers().get(USER_AGENT)?.to_str().ok()
+    req.headers().get(USER_AGENT)?.to_str().ok()
 }
 
 pub fn is_authorized(req: &HttpRequest) -> bool {
-  let ua = get_user_agent(&req);
-  let query = web::Query::<TokenParams>::from_query(req.query_string()).unwrap();
-  let app_data = req.app_data::<web::Data<AppData>>().unwrap();
+    let ua = get_user_agent(&req);
+    let query = web::Query::<TokenParams>::from_query(req.query_string()).unwrap();
+    let app_data = req.app_data::<web::Data<AppData>>().unwrap();
 
-  if query.ts.is_none() || query.code.is_none() {
-    return false;
-  }
+    if query.ts.is_none() || query.code.is_none() {
+        return false;
+    }
 
-  let token = get_token(Some(query.ts.as_ref().unwrap().as_str()), app_data);
+    let token = get_token(Some(query.ts.as_ref().unwrap().as_str()), app_data);
 
-  if ua.is_none() || app_data.ua.ne(ua.unwrap()) {
-    return false;
-  }
+    if ua.is_none() || app_data.ua.ne(ua.unwrap()) {
+        return false;
+    }
 
-  if token.is_some() && token.unwrap().eq(query.code.as_ref().unwrap().as_str()) {
-    return true;
-  }
+    if token.is_some() && token.unwrap().eq(query.code.as_ref().unwrap().as_str()) {
+        return true;
+    }
 
-  false
+    false
 }
 
 pub fn get_token<'a>(ts: Option<&'a str>, app_data: &'a web::Data<AppData>) -> Option<String> {
-  if ts.is_some() {
-    let mut hasher = Sha256::new();
-    hasher.update(format!(
-      "{}!!{}##{}",
-      app_data.secret,
-      ts.unwrap(),
-      app_data.secret
-    ));
-    let hash = hasher.finalize();
-    Some(base64::encode_config(&hash, base64::URL_SAFE_NO_PAD))
-  } else {
-    None
-  }
+    if ts.is_some() {
+        let mut hasher = Sha256::new();
+        hasher.update(format!(
+            "{}!!{}##{}",
+            app_data.secret,
+            ts.unwrap(),
+            app_data.secret
+        ));
+        let hash = hasher.finalize();
+        Some(base64::encode_config(&hash, base64::URL_SAFE_NO_PAD))
+    } else {
+        None
+    }
 }
 
 // [Middleware::Extractor] AuthorizedUrl
@@ -72,14 +72,14 @@ pub fn get_token<'a>(ts: Option<&'a str>, app_data: &'a web::Data<AppData>) -> O
 pub struct AuthorizedUrl;
 
 impl FromRequest for AuthorizedUrl {
-  type Error = Error;
-  type Future = Ready<Result<Self, Self::Error>>;
+    type Error = Error;
+    type Future = Ready<Result<Self, Self::Error>>;
 
-  fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
-    if is_authorized(req) {
-      ok(AuthorizedUrl)
-    } else {
-      err(error::ErrorBadRequest("not authorized"))
+    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
+        if is_authorized(req) {
+            ok(AuthorizedUrl)
+        } else {
+            err(error::ErrorBadRequest("not authorized"))
+        }
     }
-  }
 }
