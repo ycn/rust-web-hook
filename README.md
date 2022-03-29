@@ -1,8 +1,20 @@
 # web hook service
 
-1. 只做好一件事: 记录有效请求到日志
-2. 有效请求: `token=hash(ts+key)`
-3. 日志 scoped: 根据请求路径自动生成文件
-4. 标准化 RequestData: `{ type: '类型', from: '来源', data: '数据' }`
-5. 自动为请求数据生成 uuid, 可检索和追踪 //TODO
-6. 支持写队列 //TODO
+## 目标
+
+- 业务明确: 只做好一件事，记录有效请求到日志
+- 请求安全: 支持安全扩展与升级 // TODO
+- 性能高效: 压测 //TODO
+
+## RUST 练习内容
+
+- 获取命令行参数
+- 获取环境变量
+- 获取 Cargo 配置
+- 启动 Web Service
+- 单测
+- 多模块引用
+- lib 模块用法
+- 打印 Backtrace
+- 多平台交叉编译
+- Github 自动化
