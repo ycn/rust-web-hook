@@ -1,35 +1,57 @@
 mod types;
 
 use actix_web::{error, post, web, Error, Result};
+use backtrace::Backtrace;
 use chrono::prelude::*;
 use regex::Regex;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io;
 use std::io::prelude::*;
-use types::{PathParams, RequestBody};
+use types::{PathParams, QueryParams};
 use web_hook::{AppData, AuthorizedUrl};
 
 #[post("/log/{bucket}/{device_id}")]
 pub async fn action(
   app_data: web::Data<AppData>,
   path: web::Path<PathParams>,
-  data: web::Json<RequestBody>,
+  query: web::Query<QueryParams>,
+  bytes: web::Bytes,
   authed: Result<AuthorizedUrl>,
 ) -> Result<String, Error> {
+  let bt = Backtrace::new();
   match authed {
-    Ok(_) => {
-      if let Err(e) = write_log_line(
-        app_data.dir.as_str(),
-        path.bucket.as_str(),
-        path.device_id.as_str(),
-        &data,
-      ) {
-        return Err(error::ErrorInternalServerError(e));
+    Ok(_) => match String::from_utf8(bytes.to_vec()) {
+      Ok(text) => {
+        if text.is_empty() {
+          return Err(error::ErrorBadRequest("missing body"));
+        }
+        if let Err(e) = write_log_line(
+          app_data.dir.as_str(),
+          path.bucket.as_str(),
+          path.device_id.as_str(),
+          query
+            .cat
+            .clone()
+            .unwrap_or(String::from("unknown"))
+            .as_str(),
+          query
+            .from
+            .clone()
+            .unwrap_or(String::from("unknown"))
+            .as_str(),
+          text.as_str(),
+        ) {
+          return Err(error::ErrorInternalServerError(e));
+        }
+        Ok(String::from("ok"))
       }
-      Ok(String::from("ok"))
+      Err(e) => Err(error::ErrorInternalServerError(e)),
+    },
+    Err(e) => {
+      println!("{:?}", bt);
+      Err(e)
     }
-    Err(e) => Err(e),
   }
 }
 
@@ -37,7 +59,9 @@ fn write_log_line(
   dir: &str,
   bucket: &str,
   device_id: &str,
-  body: &RequestBody,
+  cat: &str,
+  from: &str,
+  body: &str,
 ) -> Result<(), io::Error> {
   let utc: DateTime<Utc> = Utc::now();
   let date_str: String = utc.format("%Y%m%d").to_string();
@@ -58,13 +82,13 @@ fn write_log_line(
 
   // escape data
   let re = Regex::new(r"[\r\n]").unwrap();
-  let data = re.replace_all(body.data.as_str(), "||");
+  let data = re.replace_all(body, "||");
 
   // log line fmt
   writeln!(
     file,
     "[{}]\t{}|{}\t####\t{}\t{}\t{}",
-    time_str, device_id, bucket, body.cat, body.from, data
+    time_str, device_id, bucket, cat, from, data
   )
 }
 
@@ -173,13 +197,9 @@ mod tests {
     {
       // 200 - with correct UA
       let req = test::TestRequest::post()
-        .uri("/log/sms/100?ts=123&code=sGUTG_BJFh9DRUcxsnMb0DyOq6iO09uCHonwLyvWGns")
+        .uri("/log/sms/100?ts=123&code=sGUTG_BJFh9DRUcxsnMb0DyOq6iO09uCHonwLyvWGns&cat=text&from=13500009999")
         .insert_header((USER_AGENT, "foobar"))
-        .set_json(&RequestBody {
-          cat: String::from("text"),
-          from: String::from("13500009999"),
-          data: String::from("TEXT"),
-        })
+        .set_payload(String::from("中文\n你好"))
         .to_request();
 
       let resp = app.call(req).await.unwrap();

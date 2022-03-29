@@ -7,8 +7,7 @@ pub struct PathParams {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct RequestBody {
-  pub cat: String,
-  pub from: String,
-  pub data: String,
+pub struct QueryParams {
+  pub cat: Option<String>,
+  pub from: Option<String>,
 }

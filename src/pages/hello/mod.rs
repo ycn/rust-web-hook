@@ -257,7 +257,7 @@ mod tests {
         .set_json(&RequestBody {
           r#type: Some(String::from("sms")),
           from: Some(String::from("12345")),
-          data: Some(String::from("TEXT")),
+          data: Some(String::from("中文")),
         })
         .to_request();
 
@@ -267,7 +267,7 @@ mod tests {
       let body_bytes = to_bytes(resp.into_body()).await.unwrap();
       assert_eq!(
         body_bytes,
-        r##"{"path":{"id":100,"tail":"a/b/c"},"query":{"ts":123,"code":"sGUTG_BJFh9DRUcxsnMb0DyOq6iO09uCHonwLyvWGns"},"body":{"type":"sms","from":"12345","data":"TEXT"}}"##
+        r##"{"path":{"id":100,"tail":"a/b/c"},"query":{"ts":123,"code":"sGUTG_BJFh9DRUcxsnMb0DyOq6iO09uCHonwLyvWGns"},"body":{"type":"sms","from":"12345","data":"中文"}}"##
       );
     }
   }
